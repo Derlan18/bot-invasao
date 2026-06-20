@@ -6,7 +6,9 @@ import os
 
 TOKEN = os.getenv("DISCORD_TOKEN") or os.getenv("TOKEN")
 
-print("TOKEN CARREGADO?", TOKEN is not None)
+print("TESTE =", os.getenv("TESTE"))
+print("DISCORD_TOKEN EXISTE?", os.getenv("DISCORD_TOKEN") is not None)
+print("TOKEN EXISTE?", os.getenv("TOKEN") is not None)
 
 CANAL_ID = 1517908909484933140
 CARGO_ID = 1517910050889400340
