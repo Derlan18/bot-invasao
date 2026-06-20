@@ -9,7 +9,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 CANAL_ID = 1517908909484933140
 CARGO_ID = 1517910050889400340
 
-fuso = pytz.timezone("America/Cuiaba")
+fuso = pytz.timezone("America/Sao_Paulo")
 
 agenda = {
     "monday": ["12:15", "17:30"],
