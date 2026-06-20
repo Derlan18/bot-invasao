@@ -32,31 +32,99 @@ dias_pt = {
 }
 
 intents = discord.Intents.default()
+intents.message_content = True
+
 client = discord.Client(intents=intents)
 
 avisos_enviados = set()
+bot_ativo = True
+
 
 def get_eventos_de_hoje():
     agora = datetime.now(fuso)
     dia_en = agora.strftime("%A").lower()
     return dia_en, agenda.get(dia_en, [])
 
+
+def proxima_invasao():
+    agora = datetime.now(fuso)
+    proximos = []
+
+    for i in range(8):
+        dia_data = agora + timedelta(days=i)
+        dia_en = dia_data.strftime("%A").lower()
+
+        for horario in agenda.get(dia_en, []):
+            hora_evento = datetime.strptime(horario, "%H:%M")
+            evento = dia_data.replace(
+                hour=hora_evento.hour,
+                minute=hora_evento.minute,
+                second=0,
+                microsecond=0
+            )
+
+            if evento > agora:
+                proximos.append((evento, dia_en, horario))
+
+    proximos.sort(key=lambda x: x[0])
+    return proximos[0] if proximos else None
+
+
 @client.event
 async def on_ready():
     print(f"Bot online como {client.user}")
 
-    canal = client.get_channel(CANAL_ID)
-
-    if canal:
-        await canal.send("✅ Bot conectado com sucesso ao Railway!")
-    else:
-        print("❌ Canal não encontrado.")
-
     if not verificar_eventos.is_running():
         verificar_eventos.start()
 
+
+@client.event
+async def on_message(message):
+    global bot_ativo
+
+    if message.author.bot:
+        return
+
+    comando = message.content.lower().strip()
+
+    if comando == "!proximainvasao":
+        prox = proxima_invasao()
+
+        if not prox:
+            await message.channel.send("❌ Não encontrei nenhuma próxima invasão.")
+            return
+
+        evento, dia_en, horario = prox
+
+        await message.channel.send(
+            "📌 **Próxima invasão:**\n"
+            f"📅 Dia: {dias_pt[dia_en]}\n"
+            f"🕒 Horário: {horario}\n"
+            f"⏳ Data: {evento.strftime('%d/%m/%Y %H:%M')}"
+        )
+
+    elif comando == "!agenda":
+        texto = "📅 **Agenda semanal de invasões:**\n\n"
+
+        for dia_en, horarios in agenda.items():
+            texto += f"**{dias_pt[dia_en].capitalize()}**: {', '.join(horarios)}\n"
+
+        await message.channel.send(texto)
+
+    elif comando == "!pararbot":
+        bot_ativo = False
+        await message.channel.send("⛔ Avisos de invasão pausados.")
+
+    elif comando == "!iniciarbot":
+        bot_ativo = True
+        await message.channel.send("✅ Avisos de invasão ativados novamente.")
+
+
 @tasks.loop(seconds=30)
 async def verificar_eventos():
+    if not bot_ativo:
+        return
+
     agora = datetime.now(fuso)
     dia_en, horarios = get_eventos_de_hoje()
 
@@ -97,7 +165,8 @@ async def verificar_eventos():
 
                 avisos_enviados.add(chave)
 
+
 if not TOKEN:
-    print("ERRO: TOKEN não encontrado nas variáveis do Railway.")
+    print("ERRO: DISCORD_TOKEN não encontrado nas variáveis do Railway.")
 else:
     client.run(TOKEN)
