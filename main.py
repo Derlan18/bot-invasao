@@ -45,6 +45,13 @@ def get_eventos_de_hoje():
 async def on_ready():
     print(f"Bot online como {client.user}")
 
+    canal = client.get_channel(CANAL_ID)
+
+    if canal:
+        await canal.send("✅ Bot conectado com sucesso ao Railway!")
+    else:
+        print("❌ Canal não encontrado.")
+
     if not verificar_eventos.is_running():
         verificar_eventos.start()
 
