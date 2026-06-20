@@ -21,6 +21,11 @@ agenda = {
     "sunday": ["16:45", "23:30"],
 }
 
+agenda_ggn = {
+    "wednesday": ["19:20"],
+    "sunday": ["19:20"],
+}
+
 dias_pt = {
     "monday": "segunda-feira",
     "tuesday": "terça-feira",
@@ -109,15 +114,19 @@ async def on_message(message):
         for dia_en, horarios in agenda.items():
             texto += f"**{dias_pt[dia_en].capitalize()}**: {', '.join(horarios)}\n"
 
+        texto += "\n⚔️ **Agenda GGN:**\n"
+        for dia_en, horarios in agenda_ggn.items():
+            texto += f"**{dias_pt[dia_en].capitalize()}**: {', '.join(horarios)}\n"
+
         await message.channel.send(texto)
 
     elif comando == "!pararbot":
         bot_ativo = False
-        await message.channel.send("⛔ Avisos de invasão pausados.")
+        await message.channel.send("⛔ Avisos pausados.")
 
     elif comando == "!iniciarbot":
         bot_ativo = True
-        await message.channel.send("✅ Avisos de invasão ativados novamente.")
+        await message.channel.send("✅ Avisos ativados novamente.")
 
 
 @tasks.loop(seconds=30)
@@ -134,6 +143,7 @@ async def verificar_eventos():
         print("Canal não encontrado. Verifique o CANAL_ID.")
         return
 
+    # Invasões
     for horario in horarios:
         hora_evento = datetime.strptime(horario, "%H:%M")
         evento_hoje = agora.replace(
@@ -149,7 +159,41 @@ async def verificar_eventos():
         ]
 
         for horario_aviso, mensagem in avisos:
-            chave = f"{agora.strftime('%Y-%m-%d')}-{horario}-{mensagem}"
+            chave = f"INVASAO-{agora.strftime('%Y-%m-%d')}-{horario}-{mensagem}"
+
+            if chave in avisos_enviados:
+                continue
+
+            if agora.strftime("%H:%M") == horario_aviso.strftime("%H:%M"):
+                mencao = f"<@&{CARGO_ID}> " if CARGO_ID else ""
+
+                await canal.send(
+                    f"{mencao}{mensagem}\n"
+                    f"📅 Dia: {dias_pt[dia_en]}\n"
+                    f"🕒 Horário: {horario}"
+                )
+
+                avisos_enviados.add(chave)
+
+    # GGN
+    horarios_ggn = agenda_ggn.get(dia_en, [])
+
+    for horario in horarios_ggn:
+        hora_evento = datetime.strptime(horario, "%H:%M")
+        evento_hoje = agora.replace(
+            hour=hora_evento.hour,
+            minute=hora_evento.minute,
+            second=0,
+            microsecond=0
+        )
+
+        avisos_ggn = [
+            (evento_hoje - timedelta(minutes=5), "⏰ GGN começa em 5 minutos!"),
+            (evento_hoje, "🚨 GGN começou agora!")
+        ]
+
+        for horario_aviso, mensagem in avisos_ggn:
+            chave = f"GGN-{agora.strftime('%Y-%m-%d')}-{horario}-{mensagem}"
 
             if chave in avisos_enviados:
                 continue
