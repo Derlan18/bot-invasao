@@ -92,4 +92,7 @@ async def verificar_eventos():
 
                 avisos_enviados.add(chave)
 
-client.run(TOKEN)
+if not TOKEN:
+    print("ERRO: TOKEN não encontrado nas variáveis do Railway.")
+else:
+    client.run(TOKEN)
