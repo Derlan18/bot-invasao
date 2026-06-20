@@ -5,6 +5,7 @@ import pytz
 import os
 
 TOKEN = os.getenv("DISCORD_TOKEN")
+print("TOKEN CARREGADO?", TOKEN is not None)
 
 CANAL_ID = 1517908909484933140
 CARGO_ID = 1517910050889400340
